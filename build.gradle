@@ -1,0 +1,71 @@
+plugins {
+    id 'net.minecraftforge.gradle' version '5.1.+'
+    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id 'org.spongepowered.mixin' version '0.7.+'
+    id 'java'
+}
+
+apply plugin: 'org.spongepowered.mixin'
+
+group = project.group_name
+version = project.mod_version
+
+java {
+    archivesBaseName = "${archives_base_name}-${minecraft_version}"
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+minecraft {
+    mappings channel: "${mappings_channel}", version: "${mappings_version}-${minecraft_version}"
+}
+
+repositories {
+    maven {
+        url "https://cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    compileOnly fg.deobf("curse.maven:sophisticated-core-618298:5296312")
+    compileOnly fg.deobf("curse.maven:sophisticated-storage-619320:5809745")
+    annotationProcessor "org.spongepowered:mixin:${mixin_version}:processor"
+}
+
+mixin {
+    add sourceSets.main, "${mod_id}.refmap.json"
+    config "${mod_id}.mixins.json"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching('META-INF/mods.toml') {
+        expand version: project.version,
+                mod_id: project.mod_id,
+                mod_name: project.mod_name
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+                "Specification-Title": "${mod_id}",
+                "Specification-Vendor": "HoYin1600p",
+                "Specification-Version": "1",
+                "Implementation-Title": project.name,
+                "Implementation-Version": project.jar.archiveVersion,
+                "Implementation-Vendor": "HoYin1600p",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                "MixinConfigs": "${mod_id}.mixins.json"
+        ])
+    }
+}
+
+jar.finalizedBy('reobfJar')
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

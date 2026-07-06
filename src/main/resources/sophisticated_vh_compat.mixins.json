@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "dev.hoyin1600p.sophisticated_vh_compat.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "plugin": "dev.hoyin1600p.sophisticated_vh_compat.mixin.SophisticatedVHCompatMixinPlugin",
+  "refmap": "sophisticated_vh_compat.refmap.json",
+  "client": [
+    "SophisticatedStorageBarrelBakedModelBaseMixin",
+    "SophisticatedStorageDisplayItemRendererMixin",
+    "SophisticatedStorageLimitedBarrelClientInteractionMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "minVersion": "0.8"
+}

@@ -1,0 +1,41 @@
+license = "MIT"
+loaderVersion = "[40,)"
+modLoader = "javafml"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${version}"
+displayName = "${mod_name}"
+authors = "HoYin1600p"
+displayTest = "IGNORE_SERVER_VERSION"
+description = '''
+Client-side Vault Hunters compatibility fixes for Sophisticated Storage.
+'''
+
+[[dependencies.${mod_id}]]
+mandatory = true
+modId = "forge"
+ordering = "NONE"
+side = "BOTH"
+versionRange = "[40,)"
+
+[[dependencies.${mod_id}]]
+mandatory = true
+modId = "minecraft"
+ordering = "NONE"
+side = "BOTH"
+versionRange = "[1.18.2,1.19)"
+
+[[dependencies.${mod_id}]]
+mandatory = false
+modId = "sophisticatedcore"
+ordering = "AFTER"
+side = "BOTH"
+versionRange = "[0,)"
+
+[[dependencies.${mod_id}]]
+mandatory = false
+modId = "sophisticatedstorage"
+ordering = "AFTER"
+side = "BOTH"
+versionRange = "[0,)"
