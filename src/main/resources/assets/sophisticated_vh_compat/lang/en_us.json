@@ -1,0 +1,9 @@
+{
+  "tooltip.sophisticated_vh_compat.barrel_tier": "Tier: %s",
+  "tooltip.sophisticated_vh_compat.tier.wood": "Wood",
+  "tooltip.sophisticated_vh_compat.tier.copper": "Copper",
+  "tooltip.sophisticated_vh_compat.tier.iron": "Iron",
+  "tooltip.sophisticated_vh_compat.tier.gold": "Gold",
+  "tooltip.sophisticated_vh_compat.tier.diamond": "Diamond",
+  "tooltip.sophisticated_vh_compat.tier.netherite": "Netherite"
+}

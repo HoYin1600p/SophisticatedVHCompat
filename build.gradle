@@ -20,6 +20,7 @@ minecraft {
 }
 
 repositories {
+    mavenCentral()
     maven {
         url "https://cursemaven.com"
         content {
@@ -33,6 +34,14 @@ dependencies {
     compileOnly fg.deobf("curse.maven:sophisticated-core-618298:5296312")
     compileOnly fg.deobf("curse.maven:sophisticated-storage-619320:5809745")
     annotationProcessor "org.spongepowered:mixin:${mixin_version}:processor"
+    testImplementation fg.deobf("curse.maven:sophisticated-core-618298:5296312")
+    testImplementation fg.deobf("curse.maven:sophisticated-storage-619320:5809745")
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation 'org.mockito:mockito-core:5.11.0'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 mixin {

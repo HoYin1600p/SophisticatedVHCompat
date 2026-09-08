@@ -7,7 +7,11 @@
   "client": [
     "SophisticatedStorageBarrelBakedModelBaseMixin",
     "SophisticatedStorageDisplayItemRendererMixin",
-    "SophisticatedStorageLimitedBarrelClientInteractionMixin"
+    "SophisticatedStorageLimitedBarrelClientInteractionMixin",
+    "StorageContentsTooltipAccessor",
+    "PackedBarrelContentsTooltipMixin",
+    "BarrelDisplayModelMixin",
+    "BarrelDisplayRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1
