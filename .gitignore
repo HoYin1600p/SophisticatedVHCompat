@@ -10,6 +10,10 @@ out/
 .gradle/
 build/
 
+### Python ###
+__pycache__/
+*.py[cod]
+
 ### Eclipse ###
 .apt_generated
 .classpath
