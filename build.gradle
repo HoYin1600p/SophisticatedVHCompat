@@ -33,6 +33,10 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     compileOnly fg.deobf("curse.maven:sophisticated-core-618298:5296312")
     compileOnly fg.deobf("curse.maven:sophisticated-storage-619320:5809745")
+    compileOnly annotationProcessor("io.github.llamalad7:mixinextras-common:${mixinextras_version}")
+    implementation(jarJar("io.github.llamalad7:mixinextras-forge:${mixinextras_version}")) {
+        jarJar.ranged(it, "[${mixinextras_version},)")
+    }
     annotationProcessor "org.spongepowered:mixin:${mixin_version}:processor"
     testImplementation fg.deobf("curse.maven:sophisticated-core-618298:5296312")
     testImplementation fg.deobf("curse.maven:sophisticated-storage-619320:5809745")
@@ -74,6 +78,8 @@ jar {
 }
 
 jar.finalizedBy('reobfJar')
+
+jarJar.enable()
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'

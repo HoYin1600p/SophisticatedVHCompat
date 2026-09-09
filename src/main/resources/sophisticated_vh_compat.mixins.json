@@ -4,6 +4,12 @@
   "compatibilityLevel": "JAVA_17",
   "plugin": "dev.hoyin1600p.sophisticated_vh_compat.mixin.SophisticatedVHCompatMixinPlugin",
   "refmap": "sophisticated_vh_compat.refmap.json",
+  "mixins": [
+    "CompactingUpgradeWrapperMixin",
+    "CompressionSlotDefinitionAccessor",
+    "CompressionInventoryPartMixin",
+    "InventoryHandlerExtractMixin"
+  ],
   "client": [
     "SophisticatedStorageBarrelBakedModelBaseMixin",
     "SophisticatedStorageDisplayItemRendererMixin",

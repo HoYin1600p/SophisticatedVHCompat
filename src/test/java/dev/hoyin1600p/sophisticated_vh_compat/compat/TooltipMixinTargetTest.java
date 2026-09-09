@@ -75,15 +75,19 @@ class TooltipMixinTargetTest {
     }
 
     @Test
-    void newMixinsAreClientOnlyAndRemainEnabledAlongsideVaultAdditions() throws Exception {
+    void mixinSidesAndVaultAdditionsDeduplicationAreCorrect() throws Exception {
         try (var stream = getClass().getResourceAsStream("/sophisticated_vh_compat.mixins.json")) {
             var config = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
             String clients = config.getAsJsonArray("client").toString();
+            String common = config.getAsJsonArray("mixins").toString();
             assertTrue(clients.contains("StorageContentsTooltipAccessor"));
             assertTrue(clients.contains("PackedBarrelContentsTooltipMixin"));
             assertTrue(clients.contains("BarrelDisplayModelMixin"));
             assertTrue(clients.contains("BarrelDisplayRendererMixin"));
-            assertFalse(config.has("mixins"));
+            assertTrue(common.contains("CompactingUpgradeWrapperMixin"));
+            assertTrue(common.contains("CompressionSlotDefinitionAccessor"));
+            assertTrue(common.contains("CompressionInventoryPartMixin"));
+            assertTrue(common.contains("InventoryHandlerExtractMixin"));
         }
         IMixinService service = mock(IMixinService.class);
         IClassBytecodeProvider bytecode = mock(IClassBytecodeProvider.class);
@@ -98,6 +102,23 @@ class TooltipMixinTargetTest {
             assertTrue(plugin.shouldApplyMixin(CORE, PREFIX + "PackedBarrelContentsTooltipMixin"));
             assertTrue(plugin.shouldApplyMixin(STORAGE, PREFIX + "StorageContentsTooltipAccessor"));
             assertFalse(plugin.shouldApplyMixin(STORAGE, PREFIX + "SophisticatedStorageDisplayItemRendererMixin"));
+            assertFalse(plugin.shouldApplyMixin(
+                    "net.p3pp3rf1y.sophisticatedcore.upgrades.compacting.CompactingUpgradeWrapper",
+                    PREFIX + "CompactingUpgradeWrapperMixin"
+            ));
+            assertFalse(plugin.shouldApplyMixin(
+                    "net.p3pp3rf1y.sophisticatedstorage.upgrades.compression.CompressionInventoryPart",
+                    PREFIX + "CompressionInventoryPartMixin"
+            ));
+            when(mods.getModFileById("vaultadditions")).thenReturn(null);
+            assertTrue(plugin.shouldApplyMixin(
+                    "net.p3pp3rf1y.sophisticatedcore.upgrades.compacting.CompactingUpgradeWrapper",
+                    PREFIX + "CompactingUpgradeWrapperMixin"
+            ));
+            assertTrue(plugin.shouldApplyMixin(
+                    "net.p3pp3rf1y.sophisticatedstorage.upgrades.compression.CompressionInventoryPart",
+                    PREFIX + "CompressionInventoryPartMixin"
+            ));
             String barrelModel = "net.p3pp3rf1y.sophisticatedstorage.client.render.BarrelBakedModelBase";
             String displayRenderer = "net.p3pp3rf1y.sophisticatedstorage.client.render.DisplayItemRenderer";
             assertTrue(plugin.shouldApplyMixin(barrelModel, PREFIX + "BarrelDisplayModelMixin"));
@@ -108,6 +129,55 @@ class TooltipMixinTargetTest {
             assertFalse(plugin.shouldApplyMixin(CORE, PREFIX + "PackedBarrelContentsTooltipMixin"));
             assertFalse(plugin.shouldApplyMixin(STORAGE, PREFIX + "StorageContentsTooltipAccessor"));
         }
+    }
+
+    @Test
+    void supportedRuntimeTargetsExposeAllRequiredHooks() throws Exception {
+        ClassNode inventory = readClass("net.p3pp3rf1y.sophisticatedcore.inventory.InventoryHandler");
+        assertEquals(1, inventory.methods.stream().filter(method -> method.name.equals("extractItemInternal")).count());
+
+        ClassNode compacting = readClass(
+                "net.p3pp3rf1y.sophisticatedcore.upgrades.compacting.CompactingUpgradeWrapper"
+        );
+        assertEquals(1, compacting.methods.stream().filter(method -> method.name.equals("compactSlot")
+                && method.desc.equals(
+                "(Lnet/p3pp3rf1y/sophisticatedcore/inventory/IItemHandlerSimpleInserter;I)V"
+        )).count());
+
+        ClassNode compression = readClass(
+                "net.p3pp3rf1y.sophisticatedstorage.upgrades.compression.CompressionInventoryPart"
+        );
+        assertEquals(1, compression.methods.stream().filter(method -> method.name.equals("updateSlotLimits")
+                && method.desc.equals("(Ljava/util/Map;)V")).count());
+        assertEquals(1, compression.methods.stream().filter(method -> method.name.equals("insertItem")
+                && method.desc.equals(
+                "(ILnet/minecraft/world/item/ItemStack;Z)Lnet/minecraft/world/item/ItemStack;"
+        )).count());
+        assertEquals(1, compression.methods.stream().filter(method -> method.name.equals("extractItem")
+                && method.desc.equals(
+                "(IIZLjava/util/function/ToIntFunction;)Lnet/minecraft/world/item/ItemStack;"
+        )).count());
+
+        var insertInternal = compression.methods.stream()
+                .filter(method -> method.name.equals("insertIntoInternalAndCalculated"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(5, insertInternal.instructions.size() == 0 ? 0
+                : java.util.stream.StreamSupport.stream(insertInternal.instructions.spliterator(), false)
+                .filter(MethodInsnNode.class::isInstance)
+                .map(MethodInsnNode.class::cast)
+                .filter(call -> call.name.equals("getPrevSlotMultiplier"))
+                .count());
+
+        var extract = compression.methods.stream().filter(method -> method.name.equals("extractItem")
+                && method.desc.equals(
+                "(IIZLjava/util/function/ToIntFunction;)Lnet/minecraft/world/item/ItemStack;"
+        )).findFirst().orElseThrow();
+        assertEquals(1, java.util.stream.StreamSupport.stream(extract.instructions.spliterator(), false)
+                .filter(MethodInsnNode.class::isInstance)
+                .map(MethodInsnNode.class::cast)
+                .filter(call -> call.name.equals("extractFromInternal"))
+                .count());
     }
 
     @Test
