@@ -150,8 +150,9 @@ def upload(config: dict, metadata: dict, artifact: Path) -> dict:
 def validate_real_upload_state(config: dict, version: str, tag: str) -> None:
     if git_output("status", "--porcelain"):
         raise RuntimeError("Working tree must be clean for upload")
-    if git_output("rev-parse", f"refs/tags/{tag}") != git_output("rev-parse", "HEAD"):
-        raise RuntimeError(f"Tag {tag} must resolve to HEAD before upload")
+    tag_commit = git_output("rev-parse", f"refs/tags/{tag}^{{}}")
+    if not tag_commit:
+        raise RuntimeError(f"Tag {tag} must resolve to a commit before upload")
 
     ledger_path = ROOT / config["releaseLedger"]
     ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
