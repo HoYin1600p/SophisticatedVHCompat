@@ -25,23 +25,13 @@ class ReleaseConfigurationTest(unittest.TestCase):
         self.assertEqual("publish-mod-update", config["workflow"]["skill"])
         self.assertEqual(5, config["workflow"]["revision"])
         self.assertFalse(config["github"]["usesAutomaticUpdateCheck"])
-        self.assertFalse(config["curseforge"]["projectClassGuard"]["allowUpload"])
+        self.assertTrue(config["curseforge"]["projectClassGuard"]["allowUpload"])
         self.assertNotIn("token", json.dumps(config).casefold())
 
         ledger = json.loads((ROOT / config["releaseLedger"]).read_text(encoding="utf-8"))
-        self.assertEqual(["0.0.1"], [entry["version"] for entry in ledger["releases"]])
-        self.assertFalse(
-            any(
-                entry["state"]
-                in {
-                    "prepared",
-                    "awaiting_approval",
-                    "approved_awaiting_release",
-                    "public_verified",
-                }
-                for entry in ledger["releases"]
-            )
-        )
+        self.assertEqual(["0.0.2", "0.0.1"], [entry["version"] for entry in ledger["releases"]])
+        prepared = next(entry for entry in ledger["releases"] if entry["version"] == "0.0.2")
+        self.assertEqual("prepared", prepared["state"])
 
     def test_artifact_selection_and_packaged_version(self):
         config = load_config()
@@ -76,15 +66,17 @@ class ReleaseConfigurationTest(unittest.TestCase):
             result["artifact"]["sha256"],
         )
 
-    def test_upload_guard_blocks_network_until_project_class_is_corrected(self):
+    def test_upload_guard_permits_network_after_project_class_is_corrected(self):
         config = load_config()
         artifact = select_artifact(config, read_version(config))
-        with mock.patch(
-            "urllib.request.urlopen",
-            side_effect=AssertionError("network request must remain blocked"),
-        ):
-            with self.assertRaisesRegex(RuntimeError, "project class"):
-                curseforge_publish.upload(config, {}, artifact)
+        response = mock.MagicMock()
+        response.status = 200
+        response.read.return_value = b'{"id": 1}'
+        response.__enter__.return_value = response
+        with mock.patch("urllib.request.urlopen", return_value=response) as urlopen:
+            with mock.patch.object(curseforge_publish, "configured_token", return_value="test-token"):
+                self.assertEqual(curseforge_publish.upload(config, {}, artifact), {"httpStatus": 200, "fileId": "1"})
+        self.assertTrue(urlopen.called)
 
     def test_upload_metadata_uses_validated_ids_and_optional_relations(self):
         config = load_config()

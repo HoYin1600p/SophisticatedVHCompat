@@ -21,6 +21,12 @@ public interface CompressionSlotDefinitionAccessor {
     @Accessor("isAccessible")
     boolean sophisticatedVhCompat$isAccessible();
 
+    @Accessor("slotLimit")
+    int sophisticatedVhCompat$getSlotLimit();
+
+    @Accessor("isCompressible")
+    boolean sophisticatedVhCompat$isCompressible();
+
     @Invoker("setSlotLimit")
     void sophisticatedVhCompat$setSlotLimit(int slotLimit);
 }

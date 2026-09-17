@@ -231,6 +231,53 @@ class PackedBarrelTooltipTest {
         saved.putInt("numberOfUpgradeSlots", 4);
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3, 4})
+    void storedContentsRemainAuthoritativeAfterDirectStackChanges(int slots) throws Exception {
+        Item[] items = java.util.Arrays.copyOfRange(denominations, 4 - slots, 4);
+        var preview = PackedBarrelTooltip.createPreview(barrel(slots), inventory(slots, true, new ItemStack(items[0], 129)));
+        var handler = preview.getInventoryHandler();
+        var part = handler.getInventoryPartitioner().getPartBySlot(slots - 1);
+        var refresh = CompressionInventoryPart.class.getDeclaredMethod("updateCalculatedStacks");
+        refresh.setAccessible(true);
+        Runnable rebuild = () -> {
+            try {
+                refresh.invoke(part);
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError(e);
+            }
+        };
+        int slot = slots - 1;
+        long initial = storedUnits(handler, slots);
+        ItemStack exposed = handler.getStackInSlot(slot);
+        exposed.shrink(3);
+        StorageStackUpdates.replace(exposed, rebuild, stack -> handler.setStackInSlot(slot, stack));
+        assertEquals(initial - 3, storedUnits(handler, slots));
+        assertEquals(initial - 3, handler.getStackInSlot(slot).getCount());
+
+        exposed = handler.getStackInSlot(slot);
+        exposed.grow(7);
+        StorageStackUpdates.replace(exposed, rebuild, stack -> handler.setStackInSlot(slot, stack));
+        assertEquals(initial + 4, storedUnits(handler, slots));
+
+        ItemStack removed = handler.getStackInSlot(slot).split(64);
+        StorageStackUpdates.replace(handler.getStackInSlot(slot), rebuild, stack -> handler.setStackInSlot(slot, stack));
+        assertEquals(64, removed.getCount());
+        assertEquals(initial - 60, storedUnits(handler, slots));
+
+        StorageStackUpdates.replace(ItemStack.EMPTY, rebuild, stack -> handler.setStackInSlot(slot, stack));
+        assertEquals(0, storedUnits(handler, slots));
+        assertTrue(handler.getStackInSlot(slot).isEmpty());
+    }
+
+    private long storedUnits(net.p3pp3rf1y.sophisticatedcore.inventory.InventoryHandler handler, int slots) {
+        long units = 0;
+        for (int slot = 0; slot < slots; slot++) {
+            units = units * 9 + handler.getSlotStack(slot).getCount();
+        }
+        return units;
+    }
+
     private List<Integer> counts(CompoundTag saved, int slots) {
         return PackedBarrelTooltip.getContents(barrel(slots), saved).stream().map(ItemStack::getCount).toList();
     }

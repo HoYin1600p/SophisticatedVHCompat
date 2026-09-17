@@ -1,6 +1,7 @@
 package dev.hoyin1600p.sophisticated_vh_compat.mixin;
 
 import dev.hoyin1600p.sophisticated_vh_compat.compat.SporeBlossomDisplayModel;
+import dev.hoyin1600p.sophisticated_vh_compat.compat.CompressiumDisplayModel;
 import dev.hoyin1600p.sophisticated_vh_compat.compat.BarrelDisplayAdjustments;
 import java.util.List;
 import java.util.Random;
@@ -23,7 +24,7 @@ public abstract class BarrelDisplayModelMixin {
             List<BakedQuad> quads, ItemStack stack, BakedModel originalModel, int rotation,
             Direction side, int displayIndex, int displayCount) {
         // Native scaling, slot positions, user rotation, facing, lighting and tinting still apply.
-        return SporeBlossomDisplayModel.wrap(stack, model);
+        return SporeBlossomDisplayModel.wrap(stack, CompressiumDisplayModel.wrap(stack, model));
     }
 
     @ModifyVariable(
@@ -33,6 +34,6 @@ public abstract class BarrelDisplayModelMixin {
     private double svhc$moveDripleafOutward(double offset, ItemStack stack, BakedModel model,
             BlockState state, Direction facing, int displayIndex, int displayCount, float itemScale) {
         // Add once, before the native recessed-face adjustment and facing translation.
-        return offset + BarrelDisplayAdjustments.getOutwardOffset(stack);
+        return offset + BarrelDisplayAdjustments.getOutwardOffset(stack, displayCount == 1 ? 1.0F : 0.5F);
     }
 }

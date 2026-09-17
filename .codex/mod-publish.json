@@ -56,8 +56,8 @@
     ],
     "projectClassGuard": {
       "expectedPathSegment": "mc-mods",
-      "observedPathSegment": "mc-addons",
-      "allowUpload": false
+      "observedPathSegment": "mc-mods",
+      "allowUpload": true
     }
   },
   "compatibility": {

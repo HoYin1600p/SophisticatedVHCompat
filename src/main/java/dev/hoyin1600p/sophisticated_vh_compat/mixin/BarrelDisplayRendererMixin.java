@@ -1,7 +1,9 @@
 package dev.hoyin1600p.sophisticated_vh_compat.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import dev.hoyin1600p.sophisticated_vh_compat.compat.SporeBlossomDisplayModel;
+import dev.hoyin1600p.sophisticated_vh_compat.compat.CompressiumDisplayModel;
 import dev.hoyin1600p.sophisticated_vh_compat.compat.BarrelDisplayAdjustments;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -47,7 +49,7 @@ public abstract class BarrelDisplayRendererMixin {
     private BakedModel svhc$orientDynamicSporeBlossom(BakedModel model, PoseStack pose,
             MultiBufferSource buffers, int light, int overlay, Minecraft minecraft,
             boolean onlyCustom, int displayIndex, int displayCount, ItemStack stack, int rotation) {
-        return svhc$barrelDisplay ? SporeBlossomDisplayModel.wrap(stack, model) : model;
+        return svhc$barrelDisplay ? SporeBlossomDisplayModel.wrap(stack, CompressiumDisplayModel.wrap(stack, model)) : model;
     }
 
     @ModifyVariable(
@@ -58,7 +60,7 @@ public abstract class BarrelDisplayRendererMixin {
             MultiBufferSource buffers, int light, int overlay, Minecraft minecraft,
             boolean onlyCustom, int displayIndex, int displayCount, ItemStack stack, int rotation) {
         // The renderer translates by -offset along the barrel's local outward normal.
-        return svhc$barrelDisplay ? offset + (float) BarrelDisplayAdjustments.getOutwardOffset(stack) : offset;
+        return svhc$barrelDisplay ? offset + (float) BarrelDisplayAdjustments.getOutwardOffset(stack, displayCount == 1 ? 1.0F : 0.5F) : offset;
     }
 
     @Inject(
@@ -71,5 +73,15 @@ public abstract class BarrelDisplayRendererMixin {
             // Applied to both rendering paths. Bounding-box placement would bury the petals again.
             cir.setReturnValue(SporeBlossomDisplayModel.FACE_CLEARANCE);
         }
+    }
+
+    @ModifyReturnValue(method = "getDisplayItemOffset", at = @At("RETURN"))
+    private static double svhc$compressiumClearance(double offset, ItemStack stack, BakedModel model, float scale) {
+        return model instanceof CompressiumDisplayModel ? offset + 1 / 64D : offset;
+    }
+
+    @ModifyVariable(method = "getDisplayItemOffset", at = @At("STORE"), ordinal = 0)
+    private static int svhc$modelSpecificOffset(int hash, ItemStack stack, BakedModel model, float scale) {
+        return hash * 31 + System.identityHashCode(model);
     }
 }

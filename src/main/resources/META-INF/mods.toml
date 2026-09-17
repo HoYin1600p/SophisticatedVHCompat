@@ -1,4 +1,4 @@
-license = "MIT"
+license = "GPL-3.0"
 loaderVersion = "[40,)"
 modLoader = "javafml"
 

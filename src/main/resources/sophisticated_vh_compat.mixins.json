@@ -5,19 +5,29 @@
   "plugin": "dev.hoyin1600p.sophisticated_vh_compat.mixin.SophisticatedVHCompatMixinPlugin",
   "refmap": "sophisticated_vh_compat.refmap.json",
   "mixins": [
+    "ControllerBlockEntityBaseMixin",
     "CompactingUpgradeWrapperMixin",
     "CompressionSlotDefinitionAccessor",
     "CompressionInventoryPartMixin",
-    "InventoryHandlerExtractMixin"
+    "InventoryHandlerMixin",
+    "InventoryHelperMixin",
+    "InventorySlotTrackerMixin",
+    "MemorySettingsMixin",
+    "UpgradeAccessorMixin",
+    "JeiTransferMixin",
+    "JeiRemainderPersistenceMixin",
+    "StorageContainerMenuMixin",
+    "LimitedBarrelInteractionMixin",
+    "StorageInteractionEventMixin"
   ],
   "client": [
-    "SophisticatedStorageBarrelBakedModelBaseMixin",
-    "SophisticatedStorageDisplayItemRendererMixin",
     "SophisticatedStorageLimitedBarrelClientInteractionMixin",
     "StorageContentsTooltipAccessor",
     "PackedBarrelContentsTooltipMixin",
     "BarrelDisplayModelMixin",
-    "BarrelDisplayRendererMixin"
+    "BarrelDisplayRendererMixin",
+    "LimitedBarrelRendererMixin",
+    "StorageClientEventMixin"
   ],
   "injectors": {
     "defaultRequire": 1

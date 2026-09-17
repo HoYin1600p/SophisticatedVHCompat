@@ -75,7 +75,7 @@ class TooltipMixinTargetTest {
     }
 
     @Test
-    void mixinSidesAndVaultAdditionsDeduplicationAreCorrect() throws Exception {
+    void mixinSidesAndOptionalTargetsAreCorrect() throws Exception {
         try (var stream = getClass().getResourceAsStream("/sophisticated_vh_compat.mixins.json")) {
             var config = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
             String clients = config.getAsJsonArray("client").toString();
@@ -87,7 +87,8 @@ class TooltipMixinTargetTest {
             assertTrue(common.contains("CompactingUpgradeWrapperMixin"));
             assertTrue(common.contains("CompressionSlotDefinitionAccessor"));
             assertTrue(common.contains("CompressionInventoryPartMixin"));
-            assertTrue(common.contains("InventoryHandlerExtractMixin"));
+            assertTrue(common.contains("InventoryHandlerMixin"));
+            assertTrue(common.contains("ControllerBlockEntityBaseMixin"));
         }
         IMixinService service = mock(IMixinService.class);
         IClassBytecodeProvider bytecode = mock(IClassBytecodeProvider.class);
@@ -101,12 +102,12 @@ class TooltipMixinTargetTest {
             var plugin = new SophisticatedVHCompatMixinPlugin();
             assertTrue(plugin.shouldApplyMixin(CORE, PREFIX + "PackedBarrelContentsTooltipMixin"));
             assertTrue(plugin.shouldApplyMixin(STORAGE, PREFIX + "StorageContentsTooltipAccessor"));
-            assertFalse(plugin.shouldApplyMixin(STORAGE, PREFIX + "SophisticatedStorageDisplayItemRendererMixin"));
-            assertFalse(plugin.shouldApplyMixin(
+            assertTrue(plugin.shouldApplyMixin(STORAGE, PREFIX + "BarrelDisplayRendererMixin"));
+            assertTrue(plugin.shouldApplyMixin(
                     "net.p3pp3rf1y.sophisticatedcore.upgrades.compacting.CompactingUpgradeWrapper",
                     PREFIX + "CompactingUpgradeWrapperMixin"
             ));
-            assertFalse(plugin.shouldApplyMixin(
+            assertTrue(plugin.shouldApplyMixin(
                     "net.p3pp3rf1y.sophisticatedstorage.upgrades.compression.CompressionInventoryPart",
                     PREFIX + "CompressionInventoryPartMixin"
             ));
@@ -123,6 +124,8 @@ class TooltipMixinTargetTest {
             String displayRenderer = "net.p3pp3rf1y.sophisticatedstorage.client.render.DisplayItemRenderer";
             assertTrue(plugin.shouldApplyMixin(barrelModel, PREFIX + "BarrelDisplayModelMixin"));
             assertTrue(plugin.shouldApplyMixin(displayRenderer, PREFIX + "BarrelDisplayRendererMixin"));
+            String controller = "net.p3pp3rf1y.sophisticatedcore.controller.ControllerBlockEntityBase";
+            assertTrue(plugin.shouldApplyMixin(controller, PREFIX + "ControllerBlockEntityBaseMixin"));
             when(bytecode.getClassNode(barrelModel)).thenThrow(new ClassNotFoundException());
             assertFalse(plugin.shouldApplyMixin(barrelModel, PREFIX + "BarrelDisplayModelMixin"));
             when(bytecode.getClassNode(STORAGE)).thenThrow(new ClassNotFoundException());

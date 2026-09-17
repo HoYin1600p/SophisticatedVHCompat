@@ -4,7 +4,6 @@ import com.mojang.logging.LogUtils;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
-import net.minecraftforge.fml.loading.LoadingModList;
 import org.objectweb.asm.tree.ClassNode;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -13,39 +12,7 @@ import org.spongepowered.asm.service.MixinService;
 
 public class SophisticatedVHCompatMixinPlugin implements IMixinConfigPlugin {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String VAULT_ADDITIONS_MOD_ID = "vaultadditions";
-    private static final String SOPHISTICATED_STORAGE_DISPLAY_MIXIN = "dev.hoyin1600p.sophisticated_vh_compat.mixin.SophisticatedStorageDisplayItemRendererMixin";
-    private static final String SOPHISTICATED_STORAGE_BARREL_BAKED_MIXIN = "dev.hoyin1600p.sophisticated_vh_compat.mixin.SophisticatedStorageBarrelBakedModelBaseMixin";
-    private static final String SOPHISTICATED_STORAGE_LIMITED_BARREL_CLIENT_INTERACTION_MIXIN = "dev.hoyin1600p.sophisticated_vh_compat.mixin.SophisticatedStorageLimitedBarrelClientInteractionMixin";
-    private static final String SOPHISTICATED_STORAGE_LIMITED_BARREL_CLASS = "net.p3pp3rf1y.sophisticatedstorage.block.LimitedBarrelBlock";
-    private static final Set<String> SOPHISTICATED_RUNTIME_MIXINS = Set.of(
-            "dev.hoyin1600p.sophisticated_vh_compat.mixin.CompactingUpgradeWrapperMixin",
-            "dev.hoyin1600p.sophisticated_vh_compat.mixin.CompressionSlotDefinitionAccessor",
-            "dev.hoyin1600p.sophisticated_vh_compat.mixin.CompressionInventoryPartMixin",
-            "dev.hoyin1600p.sophisticated_vh_compat.mixin.InventoryHandlerExtractMixin"
-    );
-    private static final Set<String> PACKED_BARREL_TOOLTIP_MIXINS = Set.of(
-            "dev.hoyin1600p.sophisticated_vh_compat.mixin.StorageContentsTooltipAccessor",
-            "dev.hoyin1600p.sophisticated_vh_compat.mixin.PackedBarrelContentsTooltipMixin"
-    );
-    private static final Set<String> OPTIONAL_SOPHISTICATED_STORAGE_MIXINS = Set.of(
-            SOPHISTICATED_STORAGE_DISPLAY_MIXIN,
-            SOPHISTICATED_STORAGE_BARREL_BAKED_MIXIN,
-            SOPHISTICATED_STORAGE_LIMITED_BARREL_CLIENT_INTERACTION_MIXIN
-    );
-    private static final Set<String> BARREL_DISPLAY_MIXINS = Set.of(
-            "dev.hoyin1600p.sophisticated_vh_compat.mixin.BarrelDisplayModelMixin",
-            "dev.hoyin1600p.sophisticated_vh_compat.mixin.BarrelDisplayRendererMixin"
-    );
-    private static final Set<String> VAULT_ADDITIONS_DUPLICATED_MIXINS = Set.of(
-            SOPHISTICATED_STORAGE_DISPLAY_MIXIN,
-            SOPHISTICATED_STORAGE_BARREL_BAKED_MIXIN,
-            SOPHISTICATED_STORAGE_LIMITED_BARREL_CLIENT_INTERACTION_MIXIN,
-            "dev.hoyin1600p.sophisticated_vh_compat.mixin.CompactingUpgradeWrapperMixin",
-            "dev.hoyin1600p.sophisticated_vh_compat.mixin.CompressionSlotDefinitionAccessor",
-            "dev.hoyin1600p.sophisticated_vh_compat.mixin.CompressionInventoryPartMixin",
-            "dev.hoyin1600p.sophisticated_vh_compat.mixin.InventoryHandlerExtractMixin"
-    );
+    private static final String STORAGE_CLASS = "net.p3pp3rf1y.sophisticatedstorage.block.LimitedBarrelBlock";
 
     @Override
     public void onLoad(String mixinPackage) {
@@ -58,34 +25,40 @@ public class SophisticatedVHCompatMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        boolean tooltipMixin = PACKED_BARREL_TOOLTIP_MIXINS.contains(mixinClassName);
-        boolean barrelDisplayMixin = BARREL_DISPLAY_MIXINS.contains(mixinClassName);
-        boolean runtimeMixin = SOPHISTICATED_RUNTIME_MIXINS.contains(mixinClassName);
-        if (!OPTIONAL_SOPHISTICATED_STORAGE_MIXINS.contains(mixinClassName)
-                && !tooltipMixin && !barrelDisplayMixin && !runtimeMixin) {
+        if (!isClassPresent(targetClassName)) {
+            return false;
+        }
+        if (mixinClassName.endsWith("ControllerBlockEntityBaseMixin")) {
             return true;
         }
-
-        if (!isClassPresent(targetClassName)) {
-            LOGGER.info("Sophisticated VH Compat skipping optional Sophisticated Storage mixin {} because target {} is not present", mixinClassName, targetClassName);
+        if (mixinClassName.endsWith("SophisticatedStorageLimitedBarrelClientInteractionMixin")
+                || mixinClassName.endsWith("PackedBarrelContentsTooltipMixin")
+                || mixinClassName.endsWith("StorageContentsTooltipAccessor")) {
+            if (!isClassPresent(STORAGE_CLASS)) {
+                return false;
+            }
+        }
+        if ((mixinClassName.endsWith("PackedBarrelContentsTooltipMixin")
+                || mixinClassName.endsWith("StorageContentsTooltipAccessor"))
+                && !isClassPresent("net.p3pp3rf1y.sophisticatedstorage.client.render.ClientStorageContentsTooltip")) {
             return false;
         }
-        if (!runtimeMixin && !isClassPresent(SOPHISTICATED_STORAGE_LIMITED_BARREL_CLASS)) {
-            LOGGER.info("Sophisticated VH Compat skipping optional Sophisticated Storage mixin {} because {} is not present", mixinClassName, SOPHISTICATED_STORAGE_LIMITED_BARREL_CLASS);
+        if (!mixinClassName.endsWith("JeiRemainderPersistenceMixin") && hasCompleteBackport()) {
+            LOGGER.debug("Skipping {} because the installed Sophisticated pair already contains the backports", mixinClassName);
             return false;
         }
-        if (tooltipMixin && (!isClassPresent("net.p3pp3rf1y.sophisticatedstorage.client.render.ClientStorageContentsTooltip")
-                || !isClassPresent("net.p3pp3rf1y.sophisticatedcore.client.render.ClientStorageContentsTooltip"))) {
-            LOGGER.info("Sophisticated VH Compat skipping packed barrel tooltip mixin {} because a tooltip target is not present", mixinClassName);
-            return false;
-        }
-        if (VAULT_ADDITIONS_DUPLICATED_MIXINS.contains(mixinClassName) && isVaultAdditionsPresent()) {
-            LOGGER.info("Sophisticated VH Compat skipping optional Sophisticated Storage mixin {} because {} is present", mixinClassName, VAULT_ADDITIONS_MOD_ID);
-            return false;
-        }
-
-        LOGGER.info("Sophisticated VH Compat applying optional Sophisticated Storage mixin {} for target {}", mixinClassName, targetClassName);
         return true;
+    }
+
+    private static boolean hasCompleteBackport() {
+        try {
+            ClassNode core = MixinService.getService().getBytecodeProvider()
+                    .getClassNode("net.p3pp3rf1y.sophisticatedcore.inventory.IInventoryPartHandler");
+            return core.methods.stream().anyMatch(method -> method.name.equals("onContentsChanged"))
+                    && isClassPresent("net.p3pp3rf1y.sophisticatedstorage.client.render.BarrelDisplayItem");
+        } catch (ClassNotFoundException | IOException e) {
+            return false;
+        }
     }
 
     @Override
@@ -114,13 +87,4 @@ public class SophisticatedVHCompatMixinPlugin implements IMixinConfigPlugin {
         }
     }
 
-    private static boolean isVaultAdditionsPresent() {
-        try {
-            LoadingModList loadingModList = LoadingModList.get();
-            return loadingModList != null && loadingModList.getModFileById(VAULT_ADDITIONS_MOD_ID) != null;
-        } catch (LinkageError | RuntimeException e) {
-            LOGGER.debug("Sophisticated VH Compat could not query Forge loading mod list for {}", VAULT_ADDITIONS_MOD_ID, e);
-            return false;
-        }
-    }
 }

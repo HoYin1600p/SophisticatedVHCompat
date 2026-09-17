@@ -42,10 +42,12 @@ dependencies {
     testImplementation fg.deobf("curse.maven:sophisticated-storage-619320:5809745")
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testImplementation 'org.mockito:mockito-core:5.11.0'
+    testImplementation "io.github.llamalad7:mixinextras-common:${mixinextras_version}"
 }
 
 test {
     useJUnitPlatform()
+    systemProperty 'svhc.refmap', layout.buildDirectory.file('tmp/compileJava/compileJava-refmap.json').get().asFile.absolutePath
 }
 
 mixin {
@@ -63,6 +65,7 @@ processResources {
 }
 
 jar {
+    from("LICENSE", "LICENSE-MIT", "NOTICE.md")
     manifest {
         attributes([
                 "Specification-Title": "${mod_id}",
@@ -81,6 +84,15 @@ jar.finalizedBy('reobfJar')
 
 jarJar.enable()
 
+reobf {
+    jarJar {}
+}
+tasks.jarJar.finalizedBy('reobfJarJar')
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+tasks.jarJar {
+    from("LICENSE", "LICENSE-MIT", "NOTICE.md")
 }
