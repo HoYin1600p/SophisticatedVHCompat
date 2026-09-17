@@ -8,6 +8,7 @@ import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
+from urllib.error import HTTPError
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -77,6 +78,16 @@ class ReleaseConfigurationTest(unittest.TestCase):
             with mock.patch.object(curseforge_publish, "configured_token", return_value="test-token"):
                 self.assertEqual(curseforge_publish.upload(config, {}, artifact), {"httpStatus": 200, "fileId": "1"})
         self.assertTrue(urlopen.called)
+
+    def test_upload_error_message_reads_only_the_service_message(self):
+        error = HTTPError(
+            "https://minecraft.curseforge.com/api/projects/1599839/upload-file",
+            400,
+            "Bad Request",
+            {},
+            io.BytesIO(b'{"error":"Invalid project relation"}'),
+        )
+        self.assertEqual("Invalid project relation", curseforge_publish.upload_error_message(error))
 
     def test_upload_metadata_uses_validated_ids_and_optional_relations(self):
         config = load_config()

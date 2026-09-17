@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.error
@@ -109,6 +110,18 @@ def encode_multipart(metadata: dict, artifact: Path) -> tuple[bytes, str]:
     return b"".join(chunks), boundary
 
 
+def upload_error_message(error: urllib.error.HTTPError) -> str:
+    try:
+        payload = json.loads(error.read().decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return ""
+
+    message = payload.get("error") or payload.get("message")
+    if not isinstance(message, str):
+        return ""
+    return re.sub(r"\s+", " ", message).strip()[:500]
+
+
 def upload(config: dict, metadata: dict, artifact: Path) -> dict:
     guard = config["curseforge"]["projectClassGuard"]
     if not guard["allowUpload"]:
@@ -135,7 +148,9 @@ def upload(config: dict, metadata: dict, artifact: Path) -> dict:
             payload = json.loads(response.read().decode("utf-8"))
             status = response.status
     except urllib.error.HTTPError as error:
-        raise RuntimeError(f"CurseForge upload failed with HTTP {error.code}") from None
+        message = upload_error_message(error)
+        suffix = f": {message}" if message else ""
+        raise RuntimeError(f"CurseForge upload failed with HTTP {error.code}{suffix}") from None
     except urllib.error.URLError:
         raise RuntimeError("CurseForge upload request failed") from None
     finally:
